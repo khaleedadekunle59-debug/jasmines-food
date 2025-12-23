@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jasmine Foods</title>
+<style>
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background: linear-gradient(135deg, #f0f0f0, #d9f7e1);
+}
+header{
+    background:#0a7d32;
+    color:white;
+    padding:15px;
+    text-align:center;
+    box-shadow:0 4px 15px rgba(0,0,0,0.3);
+}
+header h1{margin:0;font-size:30px;}
+header p{margin:5px 0 0;font-size:16px;}
+.container{padding:20px;}
+h2{margin-top:40px;color:#0a7d32;}
+.food-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap:20px;
+}
+.food-card{
+    background:white;
+    border-radius:10px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.2);
+    overflow:hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.food-card:hover{
+    transform: translateY(-5px);
+    box-shadow:0 12px 25px rgba(0,0,0,0.3);
+}
+.food-card img{width:100%;height:180px;object-fit:cover;}
+.food-card .info{padding:15px;}
+.food-card h3{margin:0 0 5px;}
+.price{color:#0a7d32;font-weight:bold;font-size:18px;}
+button{background:#0a7d32;color:white;border:none;padding:10px;width:100%;border-radius:5px;cursor:pointer;margin-top:10px;}
+button:hover{background:#055d24;}
+footer{background:#222;color:white;text-align:center;padding:15px;margin-top:30px;box-shadow:0 -4px 15px rgba(0,0,0,0.2);}
+#cartModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:1000;}
+#cartContent{background:white;padding:20px;border-radius:10px;width:90%;max-width:500px;max-height:80%;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.4);}
+.cart-item{display:flex;justify-content:space-between;margin:10px 0;}
+.cart-item button{width:80px;padding:5px;}
+.closeCart{background:red;color:white;padding:5px 10px;cursor:pointer;border:none;border-radius:5px;float:right;}
+#adminModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:1000;}
+#adminContent{background:white;padding:20px;border-radius:10px;width:90%;max-width:500px;max-height:90%;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.4);}
+.admin input, .admin button{padding:10px;margin:5px 0;width:100%;border-radius:5px;border:1px solid #ccc;}
+.admin button{background:#0a7d32;color:white;border:none;cursor:pointer;}
+.admin button:hover{background:#055d24;}
+ul{padding-left:20px;}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Jasmine Foods</h1>
+    <p>We deliver across the state</p>
+</header>
+
+<div class="container">
+    <h2>Meals</h2>
+    <div class="food-grid" id="mealsGrid"></div>
+
+    <h2>Snacks</h2>
+    <div class="food-grid" id="snacksGrid"></div>
+
+    <h2>Drinks</h2>
+    <div class="food-grid" id="drinksGrid"></div>
+
+    <div style="margin-top:20px;text-align:center;">
+        <button onclick="openCart()">View Cart</button>
+        <button onclick="openAdmin()">Admin Dashboard</button>
+    </div>
+</div>
+
+<footer>
+    <p>© 2025 Jasmine Foods | Fast & Reliable Delivery</p>
+</footer>
+
+<!-- Cart Modal -->
+<div id="cartModal">
+    <div id="cartContent">
+        <button class="closeCart" onclick="closeCart()">X</button>
+        <h2>Your Cart</h2>
+        <div id="cartItems"></div>
+        <p id="totalPrice"></p>
+        <button onclick="orderWhatsApp()">Order via WhatsApp</button>
+    </div>
+</div>
+
+<!-- Admin Modal -->
+<div id="adminModal">
+    <div id="adminContent" class="admin">
+        <button class="closeCart" onclick="closeAdmin()">X</button>
+        <h2>Admin Dashboard</h2>
+        <p><strong>Manage Items</strong></p>
+        <input type="text" id="dishName" placeholder="Item Name">
+        <input type="number" id="dishPrice" placeholder="Price in Naira">
+        <input type="text" id="dishImage" placeholder="Image URL">
+        <input type="text" id="dishCategory" placeholder="Category (Meals/Snacks/Drinks)">
+        <button onclick="addDish()">Add Item</button>
+        <ul id="dishList"></ul>
+    </div>
+</div>
+
+<script>
+// Full menu with working images
+let dishes = JSON.parse(localStorage.getItem('dishes')) || [
+    // Meals
+    {name:'Jollof Rice & Chicken', price:3500, img:'https://images.unsplash.com/photo-1625944520073-52b16fbe5c30?auto=format&fit=crop&w=600&q=80', category:'Meals', count:0},
+    {name:'Pounded Yam & Egusi', price:4000, img:'https://images.unsplash.com/photo-1617196039659-5d5e9e1ebf58?auto=format&fit=crop&w=600&q=80', category:'Meals', count:0},
+    {name:'Amala & Ewedu', price:3000, img:'https://images.unsplash.com/photo-1604908177522-040efbcd08f9?auto=format&fit=crop&w=600&q=80', category:'Meals', count:0},
+    {name:'Fried Rice & Turkey', price:4500, img:'https://images.unsplash.com/photo-1589307000255-32f5e95d9a08?auto=format&fit=crop&w=600&q=80', category:'Meals', count:0},
+    {name:'Beans & Plantain', price:2500, img:'https://images.unsplash.com/photo-1617191510709-8992f7c1dfc5?auto=format&fit=crop&w=600&q=80', category:'Meals', count:0},
+    {name:'Ofada Rice & Sauce', price:4000, img:'https://images.unsplash.com/photo-1621852004158-fc6b8fd1c59f?auto=format&fit=crop&w=600&q=80', category:'Meals', count:0},
+    // Snacks
+    {name:'Suya Skewers', price:2000, img:'https://images.unsplash.com/photo-1601050690945-70f937f50456?auto=format&fit=crop&w=600&q=80', category:'Snacks', count:0},
+    {name:'Akara', price:1500, img:'https://images.unsplash.com/photo-1601050690947-7f7b6e84e7b9?auto=format&fit=crop&w=600&q=80', category:'Snacks', count:0},
+    {name:'Puff-Puff', price:1200, img:'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80', category:'Snacks', count:0},
+    {name:'Chin Chin', price:1000, img:'https://images.unsplash.com/photo-1627290012490-7e46f9f19c5b?auto=format&fit=crop&w=600&q=80', category:'Snacks', count:0},
+    {name:'Meat Pie', price:1800, img:'https://images.unsplash.com/photo-1601050690946-25d65eabfd71?auto=format&fit=crop&w=600&q=80', category:'Snacks', count:0},
+    // Drinks
+    {name:'Zobo Drink', price:800, img:'https://images.unsplash.com/photo-1617191510721-96b7e7f8d9a8?auto=format&fit=crop&w=600&q=80', category:'Drinks', count:0},
+    {name:'Chapman', price:900, img:'https://images.unsplash.com/photo-1627308595247-3f21c9e0a8f9?auto=format&fit=crop&w=600&q=80', category:'Drinks', count:0},
+    {name:'Malt Drink', price:700, img:'https://images.unsplash.com/photo-1621852004159-fc6b8fd1c60f?auto=format&fit=crop&w=600&q=80', category:'Drinks', count:0},
+    {name:'Soft Drink', price:500, img:'https://images.unsplash.com/photo-1617191510723-8a2e5e7c5b0d?auto=format&fit=crop&w=600&q=80', category:'Drinks', count:0}
+];
+
+let cart = [];
+
+// Render dishes by category
+function renderDishes(){
+    const mealsGrid = document.getElementById('mealsGrid');
+    const snacksGrid = document.getElementById('snacksGrid');
+    const drinksGrid = document.getElementById('drinksGrid');
+    mealsGrid.innerHTML=''; snacksGrid.innerHTML=''; drinksGrid.innerHTML='';
+    dishes.forEach((dish,index)=>{
+        const card = document.createElement('div');
+        card.classList.add('food-card');
+        card.innerHTML = `
+            <img src="${dish.img}">
+            <div class="info">
+                <h3>${dish.name}</h3>
+                <p class="price">₦${dish.price}</p>
+                <p>Ordered: ${dish.count} times</p>
+                <button onclick="addToCart(${index})">Add to Cart</button>
+            </div>
+        `;
+        if(dish.category==='Meals') mealsGrid.appendChild(card);
+        else if(dish.category==='Snacks') snacksGrid.appendChild(card);
+        else if(dish.category==='Drinks') drinksGrid.appendChild(card);
+    });
+    renderDishList();
+}
+
+// Cart functions
+function addToCart(index){ cart.push(dishes[index]); alert(dishes[index].name+" added to cart!"); }
+function openCart(){
+    if(cart.length===0){alert("Cart is empty!");return;}
+    const cartItems=document.getElementById('cartItems'); cartItems.innerHTML='';
+    let total=0;
+    cart.forEach((item,i)=>{
+        total+=item.price;
+        const div=document.createElement('div');
+        div.classList.add('cart-item');
+        div.innerHTML=`<span>${item.name} - ₦${item.price}</span>
+                       <button onclick="removeItem(${i})">Remove</button>`;
+        cartItems.appendChild(div);
+    });
+    document.getElementById('totalPrice').innerText="Total: ₦"+total;
+    document.getElementById('cartModal').style.display='flex';
+}
+function closeCart(){document.getElementById('cartModal').style.display='none';}
+function removeItem(i){cart.splice(i,1);openCart();}
+
+// WhatsApp order and update counts
+function orderWhatsApp(){
+    if(cart.length===0){alert("Cart is empty!"); return;}
+    let message="Hello Jasmine Foods, I would like to order:\n";
+    let total=0;
+    cart.forEach(item=>{
+        message+=`- ${item.name} - ₦${item.price}\n`;
+        total+=item.price;
+        const dishIndex = dishes.findIndex(d=>d.name===item.name);
+        if(dishIndex!==-1) dishes[dishIndex].count+=1;
+    });
+    message+=`Total: ₦${total}`;
+    localStorage.setItem('dishes', JSON.stringify(dishes));
+    cart=[];
+    closeCart();
+    let phone="2349168877122";
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`);
+    renderDishes();
+}
+
+// Admin functions
+function openAdmin(){ let pwd=prompt("Enter admin password:"); if(pwd==="1234"){document.getElementById('adminModal').style.display='flex';} else{alert("Wrong password!");} }
+function closeAdmin(){document.getElementById('adminModal').style.display='none';}
+function addDish(){
+    const name=document.getElementById('dishName').value.trim();
+    const price=parseInt(document.getElementById('dishPrice').value);
+    const img=document.getElementById('dishImage').value.trim();
+    const category=document.getElementById('dishCategory').value.trim();
+    if(!name||!price||!img||!category){alert("Fill all fields!"); return;}
+    dishes.push({name,price,img,category,count:0});
+    localStorage.setItem('dishes', JSON.stringify(dishes));
+    document.getElementById('dishName').value='';
+    document.getElementById('dishPrice').value='';
+    document.getElementById('dishImage').value='';
+    document.getElementById('dishCategory').value='';
+    renderDishes();
+}
+
+// Render admin dish list with counts
+function renderDishList(){
+    const list=document.getElementById('dishList'); list.innerHTML='';
+    dishes.forEach((dish,index)=>{
+        const li=document.createElement('li');
+        li.innerHTML=`${dish.name} - ₦${dish.price} (${dish.category}) - Ordered: ${dish.count} times <button onclick="removeDish(${index})">Remove</button>`;
+        list.appendChild(li);
+    });
+}
+
+// Remove dish
+function removeDish(index){
+    if(confirm("Are you sure to remove this item?")){
+        dishes.splice(index,1);
+        localStorage.setItem('dishes', JSON.stringify(dishes));
+        renderDishes();
+    }
+}
+
+renderDishes();
+</script>
+</body>
+</html>
