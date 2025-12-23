@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Jasmine’s Food</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+<h1>🍽 Jasmine’s Food</h1>
+<p>African Dishes • Snacks • Drinks</p>
+<p>📞 09168877122</p>
+<button onclick="openCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
+</header>
+
+<h2>🍲 African Dishes</h2>
+<div class="menu" id="food"></div>
+
+<h2>🍔 Snacks</h2>
+<div class="menu" id="snacks"></div>
+
+<h2>🥤 Drinks</h2>
+<div class="menu" id="drinks"></div>
+
+<!-- CART -->
+<div id="cart" class="cart">
+<h2>Your Cart</h2>
+<div id="cartItems"></div>
+<h3>Total: ₦<span id="total">0</span></h3>
+<button onclick="checkout()">Order via WhatsApp</button>
+<button onclick="closeCart()">Close</button>
+</div>
+
+<!-- TRACK ORDER -->
+<div class="track">
+<h2>📦 Track Your Order</h2>
+<input id="trackId" placeholder="Enter Order ID">
+<button onclick="trackOrder()">Track</button>
+<p id="trackResult"></p>
+</div>
+
+<footer>
+<p>© 2025 Jasmine’s Food</p>
+<a href="admin.html">Admin Login</a>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html><!DOCTYPE html>
+<html>
+<head>
+<title>Admin Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="admin-login" id="login">
+<h2>Admin Login</h2>
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+</div>
+
+<div class="admin" id="adminPanel" style="display:none">
+<h2>Admin Panel</h2>
+
+<h3>Add Menu Item</h3>
+<input id="name" placeholder="Item Name">
+<input id="price" placeholder="Price">
+<input id="img" placeholder="Image URL">
+<select id="category">
+<option value="food">Food</option>
+<option value="snacks">Snacks</option>
+<option value="drinks">Drinks</option>
+</select>
+<button onclick="addItem()">Add Item</button>
+
+<h3>Update Order Status</h3>
+<input id="orderId" placeholder="Order ID">
+<select id="status">
+<option>Pending</option>
+<option>Cooking</option>
+<option>On the way</option>
+<option>Delivered</option>
+</select>
+<button onclick="updateStatus()">Update Status</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let orders = JSON.parse(localStorage.getItem("orders")) || {};
+let items = JSON.parse(localStorage.getItem("items")) || [
+ {name:"Jollof Rice & Chicken",price:3000,cat:"food",img:"https://images.unsplash.com/photo-1604908177522-9376b7d7a6d1"},
+ {name:"Pounded Yam & Egusi",price:3500,cat:"food",img:"https://images.unsplash.com/photo-1631515243349-e0cb75fb8e8c"},
+ {name:"Amala & Ewedu",price:2800,cat:"food",img:"https://images.unsplash.com/photo-1692192424159-89b6c4c80a71"},
+ {name:"Fried Rice & Turkey",price:3200,cat:"food",img:"https://images.unsplash.com/photo-1625943553852-781c6dd46faa"},
+ {name:"Meat Pie",price:800,cat:"snacks",img:"https://images.unsplash.com/photo-1604909053198-78c9c7c8a61c"},
+ {name:"Doughnut",price:500,cat:"snacks",img:"https://images.unsplash.com/photo-1506224774223-56c2c76b7d07"},
+ {name:"Shawarma",price:2000,cat:"snacks",img:"https://images.unsplash.com/photo-1628294895950-9805252327bc"},
+ {name:"Coke",price:400,cat:"drinks",img:"https://images.unsplash.com/photo-1610873167013-2dd675d30ef4"},
+ {name:"Zobo Drink",price:300,cat:"drinks",img:"https://images.unsplash.com/photo-1620917669788-be691b7b06a0"},
+ {name:"Bottled Water",price:200,cat:"drinks",img:"https://images.unsplash.com/photo-1548839140-29a749e1cf4d"}
+];
+
+function render(){
+["food","snacks","drinks"].forEach(c=>{
+ let el=document.getElementById(c);
+ if(!el) return;
+ el.innerHTML="";
+ items.filter(i=>i.cat==c).forEach(i=>{
+ el.innerHTML+=`
+ <div class="card">
+  <img src="${i.img}">
+  <h4>${i.name}</h4>
+  <p>₦${i.price}</p>
+  <button onclick='addToCart(${JSON.stringify(i)})'>Add</button>
+ </div>`;
+ });
+});
+if(document.getElementById("cartCount"))
+document.getElementById("cartCount").innerText=cart.length;
+}
+render();
+
+function addToCart(i){cart.push(i);localStorage.setItem("cart",JSON.stringify(cart));render();}
+function openCart(){document.getElementById("cart").style.display="block";showCart();}
+function closeCart(){document.getElementById("cart").style.display="none";}
+function showCart(){
+ let t=0,el=document.getElementById("cartItems");
+ el.innerHTML="";
+ cart.forEach(i=>{t+=i.price;el.innerHTML+=`<p>${i.name} ₦${i.price}</p>`});
+ document.getElementById("total").innerText=t;
+}
+
+function checkout(){
+ let id="JF-"+Math.floor(Math.random()*90000);
+ orders[id]={items:cart,status:"Pending"};
+ localStorage.setItem("orders",JSON.stringify(orders));
+
+ let msg="Order ID: "+id+"%0A";
+ cart.forEach(i=>msg+=i.name+" ₦"+i.price+"%0A");
+
+ cart=[];localStorage.removeItem("cart");render();
+ window.open("https://wa.me/2349168877122?text="+msg);
+ alert("Your Order ID is "+id);
+}
+
+function trackOrder(){
+ let id=document.getElementById("trackId").value;
+ document.getElementById("trackResult").innerText=
+ orders[id] ? "Status: "+orders[id].status : "Order not found";
+}
+
+/* ADMIN */
+function login(){
+ if(document.getElementById("pass").value==="admin123"){
+ document.getElementById("login").style.display="none";
+ document.getElementById("adminPanel").style.display="block";
+ } else alert("Wrong password");
+}
+
+function addItem(){
+ items.push({
+ name:document.getElementById("name").value,
+ price:+document.getElementById("price").value,
+ img:document.getElementById("img").value,
+ cat:document.getElementById("category").value
+ });
+ localStorage.setItem("items",JSON.stringify(items));
+ alert("Item added");
+ render();
+}
+
+function updateStatus(){
+ let id=document.getElementById("orderId").value;
+ if(orders[id]){
+ orders[id].status=document.getElementById("status").value;
+ localStorage.setItem("orders",JSON.stringify(orders));
+ alert("Order updated");
+ } else alert("Order not found");
+}
+body{font-family:Arial;margin:0;background:#fff8f0}
+header{background:#8b0000;color:white;padding:15px;text-align:center}
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px}
+.card{background:white;padding:10px;border-radius:10px}
+.card img{width:100%;height:130px;object-fit:cover;border-radius:8px}
+button{padding:10px;background:#25D366;color:white;border:none;border-radius:5px}
+.cart{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:white;padding:20px;overflow:auto}
+.track,.admin,.admin-login{background:white;padding:15px;margin:10px;border-radius:10px}
+footer{text-align:center;padding:10px;background:#8b0000;color:white}
+input,select{width:100%;padding:10px;margin-bottom:10px}
